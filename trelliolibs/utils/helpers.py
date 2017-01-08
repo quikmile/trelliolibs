@@ -1,6 +1,6 @@
-from trellio.wrappers import Response
-from asyncpg.exceptions import UndefinedTableError
 from asyncpg.exceptions import DuplicateTableError
+from asyncpg.exceptions import UndefinedTableError
+from trellio.wrappers import Response
 
 try:
     import ujson as json
@@ -29,15 +29,14 @@ def json_file_to_dict(_file: str) -> dict:
 
 
 class RecordHelper:
-
     @staticmethod
     def record_to_dict(recs, normalize=None):
-        normalize = normalize if normalize else lambda i:i
+        normalize = normalize if normalize else lambda i: i
         try:
             _l = []
             for i in recs:
                 _l.append(normalize(dict(i)))
-            if len(_l)>1:
+            if len(_l) > 1:
                 return _l
             else:
                 return _l[0]
@@ -51,7 +50,7 @@ class RecordHelper:
             _l = []
             for i in recs:
                 _l.append(normalize(tuple(i)))
-            if len(_l)>1:
+            if len(_l) > 1:
                 return _l
             else:
                 return _l[0]
@@ -73,6 +72,7 @@ async def create_table(conn, query):
             return False
     else:
         return False
+
 
 async def drop_table(conn, query):
     if 'DROP' in query:
