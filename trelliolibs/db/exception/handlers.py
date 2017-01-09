@@ -1,9 +1,9 @@
-from asyncpg import exceptions as database_exc
 import asyncio
+
+from asyncpg import exceptions as database_exc
 
 
 class ExceptionHandler:
-
     def __init__(self, ds):
         self.ds = ds
 
@@ -32,7 +32,6 @@ class AsyncpgExceptionHandler:
         self.coro = coro
         self.ds = ds
 
-
     def __enter__(self):
         return self
 
@@ -41,7 +40,8 @@ class AsyncpgExceptionHandler:
         for i in dir(database_exc):
             excp = getattr(database_exc, i)
             if excp is exc_type:
-                self.ds['exception_dict'] = asyncio.get_event_loop().run_until_complete(self.coro(exc_type, exc_val, exc_tb))
+                self.ds['exception_dict'] = asyncio.get_event_loop().run_until_complete(
+                    self.coro(exc_type, exc_val, exc_tb))
                 found = True
         if not found:
             raise exc_val
