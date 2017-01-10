@@ -12,12 +12,12 @@ def required_params(*params):
             if isinstance(self, HTTPService):
                 request = args[0]
                 payload = await request.json()
-                diff = set(params).symmetric_difference(payload.keys())
-                if diff:
-                    return json_response({'error': 'required params - {} not found'.format(', '.join(diff))})
+                missing_params = list(filter(lambda x: x not in payload.keys(), params))
+                if missing_params:
+                    return json_response({'error': 'required params - {} not found'.format(', '.join(missing_params))})
             elif isinstance(self, TCPService):
-                diff = set(params).symmetric_difference(kwargs.keys())
-                return {'error': 'required params - {} not found'.format(', '.join(diff))}
+                missing_params = list(filter(lambda x: x not in kwargs.keys(), params))
+                return {'error': 'required params - {} not found'.format(', '.join(missing_params))}
 
             return await func(self, *args, **kwargs)
 
