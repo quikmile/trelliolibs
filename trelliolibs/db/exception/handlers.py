@@ -4,7 +4,8 @@ import asyncio
 
 class ExceptionHandler:
 
-    def __init__(self, ds):
+    def __init__(self, conn, ds):
+        self.conn = conn
         self.ds = ds
 
     def __enter__(self):
@@ -20,7 +21,7 @@ class ExceptionHandler:
 
 class AsyncpgExceptionHandler:
     '''
-    Usage with AsyncpgExceptionHandler(coro_to_run_on_exception, result_dict):
+    Usage with AsyncpgExceptionHandler(conn, coro_to_run_on_exception, result_dict):
             any query_code
     Or
     class Myhandler(ExceptionHandler):
@@ -28,7 +29,8 @@ class AsyncpgExceptionHandler:
             #exception_handling code
     '''
 
-    def __init__(self, coro, ds):
+    def __init__(self, conn, coro, ds):
+        self.conn = conn
         self.coro = coro
         self.ds = ds
 
