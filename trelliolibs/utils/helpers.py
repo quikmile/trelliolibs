@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from asyncpg.exceptions import DuplicateTableError
 from asyncpg.exceptions import UndefinedTableError
 from trellio.wrappers import Response
@@ -26,6 +28,15 @@ def json_file_to_dict(_file: str) -> dict:
         config = json.load(config_file)
 
     return config
+
+
+def uuid_serializer(data):
+    for key, value in data.items():
+        if isinstance(value, UUID):
+            data[key] = str(value)
+        if value is None:
+            data[key] = ''
+    return data
 
 
 class RecordHelper:
