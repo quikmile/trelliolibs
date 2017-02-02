@@ -42,11 +42,14 @@ def uuid_serializer(data):
 class RecordHelper:
     @staticmethod
     def record_to_dict(recs, normalize=None):
-        normalize = normalize if normalize else lambda i: i
+        normalize = normalize if normalize else [lambda i: i]
         try:
             _l = []
             for i in recs:
-                _l.append(normalize(dict(i)))
+                data = dict(i)
+                for j in normalize:
+                    data = j(data)
+                _l.append(data)
             if len(_l) > 1:
                 return _l
             else:
@@ -56,11 +59,14 @@ class RecordHelper:
 
     @staticmethod
     def record_to_tuple(recs, normalize=None):
-        normalize = normalize if normalize else lambda i: i
+        normalize = normalize if normalize else [lambda i: i]
         try:
             _l = []
             for i in recs:
-                _l.append(normalize(tuple(i)))
+                data = tuple(i)
+                for j in normalize:
+                    data = j(data)
+                _l.append(data)
             if len(_l) > 1:
                 return _l
             else:
