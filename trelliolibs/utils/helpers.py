@@ -39,6 +39,7 @@ def uuid_serializer(data):
     return data
 
 
+
 class RecordHelper:
     @staticmethod
     def record_to_dict(recs, normalize=None):
@@ -52,8 +53,10 @@ class RecordHelper:
                 _l.append(data)
             if len(_l) > 1:
                 return _l
-            else:
+            elif len(_l) > 0:
                 return _l[0]
+            else:
+                return _l
         except:
             return normalize(dict(recs))
 
@@ -69,8 +72,10 @@ class RecordHelper:
                 _l.append(data)
             if len(_l) > 1:
                 return _l
-            else:
+            elif len(_l) > 0:
                 return _l[0]
+            else:
+                return _l
         except:
             return normalize(tuple(recs))
 
