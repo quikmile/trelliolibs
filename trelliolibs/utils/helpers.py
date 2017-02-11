@@ -1,5 +1,5 @@
 from uuid import UUID
-
+import collections
 from asyncpg.exceptions import DuplicateTableError
 from asyncpg.exceptions import UndefinedTableError
 from trellio.wrappers import Response
@@ -41,43 +41,44 @@ def uuid_serializer(data):
 
 
 class RecordHelper:
+
     @staticmethod
     def record_to_dict(recs, normalize=None):
-        normalize = normalize if normalize else [lambda i: i]
-        try:
-            _l = []
-            for i in recs:
-                data = dict(i)
-                for j in normalize:
-                    data = j(data)
-                _l.append(data)
-            if len(_l) > 1:
-                return _l
-            elif len(_l) > 0:
-                return _l[0]
-            else:
-                return _l
-        except:
-            return normalize(dict(recs))
+        if normalize and not isinstance(normalize,collections.Iterable):
+            normalize = [normalize]
+        elif not normalize:
+            normalize = normalize if normalize else [lambda i: i]
+        _l = []
+        for i in recs:
+            data = dict(i)
+            for j in normalize:
+                data = j(data)
+            _l.append(data)
+        if len(_l) > 1:
+            return _l
+        elif len(_l) > 0:
+            return _l[0]
+        else:
+            return _l
 
     @staticmethod
     def record_to_tuple(recs, normalize=None):
-        normalize = normalize if normalize else [lambda i: i]
-        try:
-            _l = []
-            for i in recs:
-                data = tuple(i)
-                for j in normalize:
-                    data = j(data)
-                _l.append(data)
-            if len(_l) > 1:
-                return _l
-            elif len(_l) > 0:
-                return _l[0]
-            else:
-                return _l
-        except:
-            return normalize(tuple(recs))
+        if normalize and not isinstance(normalize,collections.Iterable):
+            normalize = [normalize]
+        elif not normalize:
+            normalize = normalize if normalize else [lambda i: i]
+        _l = []
+        for i in recs:
+            data = tuple(i)
+            for j in normalize:
+                data = j(data)
+            _l.append(data)
+        if len(_l) > 1:
+            return _l
+        elif len(_l) > 0:
+            return _l[0]
+        else:
+            return _l
 
 
 def run_coro(coro):
