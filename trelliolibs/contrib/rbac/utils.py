@@ -14,7 +14,7 @@ def activate_auto_create_resources():
         service_version = http_service.version
         rbac_client = RBACTCPClient()
         api_methods = []
-        exclude_resources = ['/ping', '/_stats']
+        exclude_resources = ['/ping', '/_stats', '/ping/', '/_stats/']
         for i in dir(http_service):
             attr = getattr(http_service,i)
             if inspect.ismethod(attr) and getattr(attr, 'is_http_method', None):

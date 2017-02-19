@@ -1,6 +1,5 @@
 from trellio.services import TCPServiceClient, request
 
-
 class RBACTCPClient(TCPServiceClient):
     def __init__(self, *args, **kwargs):
         super(RBACTCPClient, self).__init__("rbac_service", 1)
@@ -12,4 +11,9 @@ class RBACTCPClient(TCPServiceClient):
 
     @request
     def create_service_resources(self, service_name, service_version, http_resources):
+        return locals()
+
+
+    @request
+    def verify_access(self, resource_name,resource_action, resource_type, user_id='',auth_token=''):
         return locals()
