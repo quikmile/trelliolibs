@@ -3,17 +3,8 @@ import copy
 import logging
 import uuid
 from trelliopg.sql import async_atomic
-from trelliolibs.utils.helpers import RecordHelper
+from trelliolibs.utils.helpers import RecordHelper, uuid_serializer
 from collections import deque
-
-
-def uuid_serializer(data):
-    for key, value in data.items():
-        if isinstance(value, uuid.UUID):
-            data[key] = str(value)
-        if value is None:
-            data[key] = ''
-    return data
 
 
 class InvalidNodeDict(Exception):
@@ -282,6 +273,8 @@ class NestedCategoriesManager:
         colms_list = []
         for i in node_dict.keys():
             new_str = "'%s'"
+            if i == self.group_name and not node_dict[i]:
+                continue
             values_list.append(new_str % str(node_dict[i]))
             colms_list.append(str(i))
         return colms_list, values_list
