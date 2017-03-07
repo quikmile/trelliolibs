@@ -49,6 +49,8 @@ class RecordHelper:
         elif not normalize:
             normalize = normalize if normalize else [lambda i: i]
         _l = []
+        if not isinstance(recs, list):
+            recs = [recs]
         for i in recs:
             data = dict(i)
             for j in normalize:
@@ -68,6 +70,8 @@ class RecordHelper:
         elif not normalize:
             normalize = normalize if normalize else [lambda i: i]
         _l = []
+        if not isinstance(recs,list):
+            recs=[recs]
         for i in recs:
             data = tuple(i)
             for j in normalize:
