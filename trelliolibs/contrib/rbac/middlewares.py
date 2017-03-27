@@ -11,7 +11,7 @@ class VerifyUserAccess:
     async def pre_request(self, service, request, *args, **kwargs):
         if not self.rbac_client:
             raise Exception('Middleware need a rbac client')
-        auth_token = request.headers['AUTHORIZATION']
+        auth_token = request.headers.get('AUTHORIZATION') or request.headers.get('Authorization')
         resource = str(request.rel_url)  # aiohttp request attr
         resource_action = request.method.lower()
         access =  await asyncio.wait_for(self.rbac_client.verify_access(auth_token=auth_token, resource_name=resource,
