@@ -1,5 +1,9 @@
 import asyncio
-import json
+
+try:
+    import ujson as json
+except:
+    import json
 
 from aiohttp.web import Response
 
