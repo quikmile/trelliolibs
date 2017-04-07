@@ -1,5 +1,7 @@
 import asyncio
 
+from aiohttp.web_request import Request
+
 try:
     import ujson as json
 except:
@@ -37,5 +39,6 @@ class RequestUser:
         user_subs = request.headers.get('x-user-subs', None)
         request.__setitem__('user_id', user_id)
         request.__setitem__('user_subs', None)
+
         if user_subs is not None:
             request.__setitem__('user_subs', json.loads(user_subs))

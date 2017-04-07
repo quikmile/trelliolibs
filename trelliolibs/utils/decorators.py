@@ -17,7 +17,8 @@ def required_params(*params):
                     return json_response({'error': 'required params - {} not found'.format(', '.join(missing_params))})
             elif isinstance(self, TCPService):
                 missing_params = list(filter(lambda x: x not in kwargs.keys(), params))
-                return {'error': 'required params - {} not found'.format(', '.join(missing_params))}
+                if missing_params:
+                    return {'error': 'required params - {} not found'.format(', '.join(missing_params))}
 
             return await func(self, *args, **kwargs)
 
