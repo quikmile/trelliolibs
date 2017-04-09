@@ -20,3 +20,7 @@ class RBACTCPClient(TCPServiceClient):
     @request
     def verify_access(self, resource_name, resource_action, resource_type, user_id='', auth_token=''):
         return locals()
+
+    @request
+    def verify_token(self, token):
+        return locals()
