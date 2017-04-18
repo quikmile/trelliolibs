@@ -7,7 +7,7 @@ except:
 
 from aiohttp.web import Response
 
-from trelliolibs.contrib.rbac.client import RBACTCPClient
+from .client import RBACTCPClient
 
 
 class VerifyUserAccess:

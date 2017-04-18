@@ -39,39 +39,37 @@ def uuid_serializer(data):
     return data
 
 
-
 class RecordHelper:
-
     @staticmethod
     def record_to_dict(recs, normalize=None):
-        if normalize and not isinstance(normalize,collections.Iterable):
+        if normalize and not isinstance(normalize, collections.Iterable):
+            normalize = [normalize]
+        elif not normalize:
+            normalize = normalize if normalize else [lambda i: i]
+
+        if not isinstance(recs, list):
+            data = dict(recs)
+            for j in normalize:
+                data = j(data)
+            return data
+        elif isinstance(recs, list):
+            _l = []
+            for i in recs:
+                data = dict(i)
+                for j in normalize:
+                    data = j(data)
+                _l.append(data)
+            return _l
+
+    @staticmethod
+    def record_to_tuple(recs, normalize=None):
+        if normalize and not isinstance(normalize, collections.Iterable):
             normalize = [normalize]
         elif not normalize:
             normalize = normalize if normalize else [lambda i: i]
         _l = []
         if not isinstance(recs, list):
             recs = [recs]
-        for i in recs:
-            data = dict(i)
-            for j in normalize:
-                data = j(data)
-            _l.append(data)
-        if len(_l) > 1:
-            return _l
-        elif len(_l) > 0:
-            return _l[0]
-        else:
-            return _l
-
-    @staticmethod
-    def record_to_tuple(recs, normalize=None):
-        if normalize and not isinstance(normalize,collections.Iterable):
-            normalize = [normalize]
-        elif not normalize:
-            normalize = normalize if normalize else [lambda i: i]
-        _l = []
-        if not isinstance(recs,list):
-            recs=[recs]
         for i in recs:
             data = tuple(i)
             for j in normalize:

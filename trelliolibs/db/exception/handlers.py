@@ -47,3 +47,7 @@ class AsyncpgExceptionHandler:
                 found = True
         if not found:
             raise exc_val
+
+class RecordNotFound(Exception):
+    pass
+
