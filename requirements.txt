@@ -8,7 +8,7 @@ asyncio-redis==0.14.3
 asyncpg==0.8.4
 cchardet==1.1.2
 cffi==1.9.1
-chardet==2.3.0
+Cerberus==1.1
 cryptography==1.7.2
 factory-boy==2.5.2
 fake-factory==0.5.2
