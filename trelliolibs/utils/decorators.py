@@ -23,7 +23,7 @@ def validate_schema(schema=None, allow_unknown=False):
                     request = args[0]
                     payload = await request.json()
                     if not v.validate(payload):
-                        return json_response({'error': v.errors})
+                        return json_response({'error': v.errors}, status=400)
                 elif isinstance(self, TCPService):
                     if not v.validate(kwargs):
                         return {'error': v.errors}
