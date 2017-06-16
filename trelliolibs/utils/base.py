@@ -73,23 +73,23 @@ class CRUDModel:
 
 class CRUDTCPClient:
     @request
-    def get(self, id):
+    def get_record(self, id):
         return locals()
 
     @request
-    def filter(self, params):
+    def filter_record(self, params):
         return locals()
 
     @request
-    def create(self, values):
+    def create_record(self, values):
         return locals()
 
     @request
-    def update(self, id, values):
+    def update_record(self, id, values):
         return locals()
 
     @request
-    def delete(self, id):
+    def delete_record(self, id):
         return locals()
 
 
@@ -215,7 +215,7 @@ class CRUDTCPService:
         self._allow_unknown = allow_unknown
 
     @api
-    async def filter(self, params):
+    async def filter_record(self, params):
         try:
             if not params.get('filter'):
                 params['filter'] = dict()
@@ -228,14 +228,14 @@ class CRUDTCPService:
             return {'error': str(e)}
 
     @api
-    async def get(self, id):
+    async def get_record(self, id):
         try:
             return await self._model.get(id=id)
         except RecordNotFound:
             return {'error': '{}_id {} does not exists'.format(self._table_name, id)}
 
     @api
-    async def create(self, values):
+    async def create_record(self, values):
         missing_params = list(filter(lambda x: x not in values.keys(), self._required_params))
         if missing_params:
             return {'error': 'required params - {} not found'.format(', '.join(missing_params))}
@@ -253,7 +253,7 @@ class CRUDTCPService:
             return {'error': str(e)}
 
     @api
-    async def update(self, id, params):
+    async def update_record(self, id, params):
         if self._update_schema:
             v = TrellioValidator(self._update_schema, allow_unknown=self._allow_unknown)
             if not v.validate(params):
@@ -269,5 +269,5 @@ class CRUDTCPService:
             return {'error': str(e)}
 
     @api
-    async def delete(self, id):
+    async def delete_record(self, id):
         return await self._model.delete(id)
