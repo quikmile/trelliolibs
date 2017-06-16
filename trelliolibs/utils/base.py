@@ -119,25 +119,25 @@ class CRUDHTTPService:
         if self._base_uri:
             path = self._base_uri + 's/'
         func = get(path=path)
-        self.__class__.filter = func(self.filter)
+        self.__class__.filter_record = func(self.filter_record)
 
     def _enable_get(self):
         func = get(path=self._base_uri + '/{id}/')
-        self.__class__.get = func(self.get)
+        self.__class__.get_record = func(self.get_record)
 
     def _enable_create(self):
         func = post(path=self._base_uri + '/')
-        self.__class__.create = func(self.create)
+        self.__class__.create_record = func(self.create_record)
 
     def _enable_update(self):
         func = put(path=self._base_uri + '/{id}/')
-        self.__class__.update = func(self.update)
+        self.__class__.update_record = func(self.update_record)
 
     def _enable_delete(self):
         func = delete(path=self._base_uri + '/{id}/')
-        self.__class__.delete = func(self.delete)
+        self.__class__.delete_record = func(self.delete_record)
 
-    async def filter(self, service, request, *args, **kwargs):
+    async def filter_record(self, service, request, *args, **kwargs):
         try:
             params = extract_request_params(dict(request.GET))
             if self._state_key:
@@ -151,7 +151,7 @@ class CRUDHTTPService:
         except RequestKeyError as e:
             return json_response({'error': str(e)}, status=400)
 
-    async def get(self, service, request, *args, **kwargs):
+    async def get_record(self, service, request, *args, **kwargs):
         id = request.match_info.get('id')
         try:
             result = await self._model.get(id=id)
@@ -159,7 +159,7 @@ class CRUDHTTPService:
         except RecordNotFound:
             return json_response({'error': '{}_id {} does not exists'.format(self._table_name, id)}, status=400)
 
-    async def create(self, service, request, *args, **kwargs):
+    async def create_record(self, service, request, *args, **kwargs):
         values = await request.json()
 
         if self._create_schema:
@@ -179,7 +179,7 @@ class CRUDHTTPService:
         except UndefinedColumnError as e:
             return json_response({'error': str(e)}, status=400)
 
-    async def update(self, service, request, *args, **kwargs):
+    async def update_record(self, service, request, *args, **kwargs):
         values = await request.json()
 
         if self._update_schema:
@@ -199,7 +199,7 @@ class CRUDHTTPService:
         except UndefinedColumnError as e:
             return json_response({'error': str(e)}, status=400)
 
-    async def delete(self, service, request, *args, **kwargs):
+    async def delete_record(self, service, request, *args, **kwargs):
         return json_response(await self._model.delete(request.match_info.get('id')))
 
 
