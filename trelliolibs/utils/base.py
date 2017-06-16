@@ -94,18 +94,18 @@ class CRUDTCPClient:
 
 
 class CRUDHTTPService:
-    def __init__(self, name, version, host, port, crud_name='', required_params=(), state_key=None, create_schema=None,
-                 update_schema=None, allow_unknown=False):
+    def __init__(self, name, version, host, port, table_name='', base_uri='', required_params=(), state_key=None,
+                 create_schema=None, update_schema=None, allow_unknown=False):
         super(CRUDHTTPService, self).__init__(name, version, host, port)
-        self._crud_name = crud_name
-        self._model = CRUDModel(table=crud_name)
+        self._table_name = table_name
+        self._model = CRUDModel(table=table_name)
         self._state_key = state_key
         self._create_schema = create_schema
         self._update_schema = update_schema
         self._allow_unknown = allow_unknown
-        self._base_path = ''
-        if crud_name:
-            self._base_path = '/{}'.format(crud_name)
+        self._base_uri = ''
+        if base_uri:
+            self._base_uri = '/{}'.format(base_uri)
 
     def _enable_crud(self):
         self._enable_delete()
@@ -116,25 +116,25 @@ class CRUDHTTPService:
 
     def _enable_filter(self):
         path = '/all/'
-        if self._base_path:
-            path = self._base_path + 's/'
+        if self._base_uri:
+            path = self._base_uri + 's/'
         func = get(path=path)
         self.__class__.filter = func(self.filter)
 
     def _enable_get(self):
-        func = get(path=self._base_path + '/{id}/')
+        func = get(path=self._base_uri + '/{id}/')
         self.__class__.get = func(self.get)
 
     def _enable_create(self):
-        func = post(path=self._base_path + '/')
+        func = post(path=self._base_uri + '/')
         self.__class__.create = func(self.create)
 
     def _enable_update(self):
-        func = put(path=self._base_path + '/{id}/')
+        func = put(path=self._base_uri + '/{id}/')
         self.__class__.update = func(self.update)
 
     def _enable_delete(self):
-        func = delete(path=self._base_path + '/{id}/')
+        func = delete(path=self._base_uri + '/{id}/')
         self.__class__.delete = func(self.delete)
 
     async def filter(self, service, request, *args, **kwargs):
@@ -157,7 +157,7 @@ class CRUDHTTPService:
             result = await self._model.get(id=id)
             return json_response(result)
         except RecordNotFound:
-            return json_response({'error': '{}_id {} does not exists'.format(self._crud_name, id)}, status=400)
+            return json_response({'error': '{}_id {} does not exists'.format(self._table_name, id)}, status=400)
 
     async def create(self, service, request, *args, **kwargs):
         values = await request.json()
@@ -204,11 +204,11 @@ class CRUDHTTPService:
 
 
 class CRUDTCPService:
-    def __init__(self, name, version, host, port, crud_name='', required_params=(), create_schema=None,
+    def __init__(self, name, version, host, port, table_name='', required_params=(), create_schema=None,
                  update_schema=None, allow_unknown=False):
         super(CRUDTCPService, self).__init__(name, version, host, port)
-        self._crud_name = crud_name
-        self._model = CRUDModel(table=crud_name)
+        self._table_name = table_name
+        self._model = CRUDModel(table=table_name)
         self._required_params = required_params
         self._create_schema = create_schema
         self._update_schema = update_schema
@@ -232,7 +232,7 @@ class CRUDTCPService:
         try:
             return await self._model.get(id=id)
         except RecordNotFound:
-            return {'error': '{}_id {} does not exists'.format(self._crud_name, id)}
+            return {'error': '{}_id {} does not exists'.format(self._table_name, id)}
 
     @api
     async def create(self, values):
