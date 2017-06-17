@@ -20,7 +20,7 @@ class RequestKeyError(Exception):
 
 def extract_request_params(request, filter_keys=()):
     params = dict()
-    if request.get('limit') is not None and request.get('limit') == 'ALL':
+    if request.get('limit') and request.get('limit') == 'ALL':
         params['limit'] = 'ALL'
         request.pop('limit')
     else:
@@ -142,8 +142,8 @@ class CRUDHTTPService:
     async def filter_record(self, service, request, *args, **kwargs):
         try:
             params = extract_request_params(dict(request.GET))
-            if self._state_key:
-                params[self._state_key] = request._state.get(self._state_key)
+            if self._state_key and request._state.get(self._state_key):
+                params['filter'][self._state_key] = request._state[self._state_key]
 
             results = await self._model.filter(limit=params['limit'],
                                                offset=params['offset'],
