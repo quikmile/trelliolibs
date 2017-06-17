@@ -45,7 +45,7 @@ class CRUDModel:
         self._table = table
         self._db = get_db_adapter()
         self._record = RecordHelper()
-        self._serializers = [uuid_serializer, partial(json_serializer, field=json_fields)]
+        self._serializers = [uuid_serializer, partial(json_serializer, fields=json_fields)]
 
     async def get(self, id=None):
         results = await self._db.where(table=self._table, id=id)

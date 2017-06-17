@@ -42,7 +42,8 @@ def uuid_serializer(data):
 
 def json_serializer(data, fields=()):
     for field in fields:
-        data[field] = json.loads(data[field])
+        if data.get(field):
+            data[field] = json.loads(data[field])
     return data
 
 
