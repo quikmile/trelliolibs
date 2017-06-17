@@ -142,8 +142,8 @@ class CRUDHTTPService:
     async def filter_record(self, service, request, *args, **kwargs):
         try:
             params = extract_request_params(dict(request.GET))
-            if self._state_key and request._state.get(self._state_key):
-                params['filter'][self._state_key] = request._state[self._state_key]
+            if self._state_key and request._state and request._state['user_subs'].get(self._state_key):
+                params['filter'][self._state_key] = request._state['user_subs'][self._state_key]
 
             results = await self._model.filter(limit=params['limit'],
                                                offset=params['offset'],
