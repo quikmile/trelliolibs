@@ -1,9 +1,11 @@
+from functools import partial
 from time import time
 
 from asyncpg.exceptions import UniqueViolationError, UndefinedColumnError
 from trellio import request, get, put, post, delete, api
 from trelliopg import get_db_adapter
 
+from trelliolibs.utils.helpers import json_serializer
 from .decorators import TrellioValidator
 from .helpers import RecordHelper, uuid_serializer, json_response
 
@@ -39,11 +41,11 @@ def extract_request_params(request, filter_keys=()):
 
 
 class CRUDModel:
-    def __init__(self, table=''):
+    def __init__(self, table='', json_fields=()):
         self._table = table
         self._db = get_db_adapter()
         self._record = RecordHelper()
-        self._serializers = [uuid_serializer]
+        self._serializers = [uuid_serializer, partial(json_serializer, field=json_fields)]
 
     async def get(self, id=None):
         results = await self._db.where(table=self._table, id=id)
@@ -95,10 +97,10 @@ class CRUDTCPClient:
 
 class CRUDHTTPService:
     def __init__(self, name, version, host, port, table_name='', base_uri='', required_params=(), state_key=None,
-                 create_schema=None, update_schema=None, allow_unknown=False):
+                 create_schema=None, update_schema=None, allow_unknown=False, json_fields=()):
         super(CRUDHTTPService, self).__init__(name, version, host, port)
         self._table_name = table_name
-        self._model = CRUDModel(table=table_name)
+        self._model = CRUDModel(table=table_name, json_fields=json_fields)
         self._state_key = state_key
         self._create_schema = create_schema
         self._update_schema = update_schema

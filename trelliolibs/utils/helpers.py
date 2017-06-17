@@ -1,5 +1,6 @@
-from uuid import UUID
 import collections
+from uuid import UUID
+
 from asyncpg.exceptions import DuplicateTableError
 from asyncpg.exceptions import UndefinedTableError
 from trellio.wrappers import Response
@@ -36,6 +37,12 @@ def uuid_serializer(data):
             data[key] = str(value)
         if value is None:
             data[key] = ''
+    return data
+
+
+def json_serializer(data, fields=()):
+    for field in fields:
+        data[field] = json.loads(data[field])
     return data
 
 
