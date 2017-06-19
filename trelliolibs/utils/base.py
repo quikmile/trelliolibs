@@ -207,10 +207,10 @@ class CRUDHTTPService:
 
 class CRUDTCPService:
     def __init__(self, name, version, host, port, table_name='', required_params=(), create_schema=None,
-                 update_schema=None, allow_unknown=False):
+                 update_schema=None, allow_unknown=False, json_fields=()):
         super(CRUDTCPService, self).__init__(name, version, host, port)
         self._table_name = table_name
-        self._model = CRUDModel(table=table_name)
+        self._model = CRUDModel(table=table_name, json_fields=json_fields)
         self._required_params = required_params
         self._create_schema = create_schema
         self._update_schema = update_schema
