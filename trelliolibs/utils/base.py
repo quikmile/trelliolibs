@@ -193,7 +193,11 @@ class CRUDHTTPService:
             values['updated_by'] = request._state['user_id']
             values[self._state_key] = request._state['user_subs'].get(self._state_key)
         try:
-            return json_response(await self._model.update(request.match_info.get('id'), values))
+            id = request.match_info.get('id')
+            results = await self._model.update(id, values)
+            if len(results) > 1:
+                return json_response({'error': "multiple records found with this id '{}'".format(id)}, status=400)
+            return json_response(results[0])
         except RecordNotFound as e:
             return json_response({'error': str(e)}, status=400)
         except UniqueViolationError:
