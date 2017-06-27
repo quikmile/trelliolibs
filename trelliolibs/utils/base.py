@@ -47,29 +47,29 @@ class CRUDModel:
         self._record = RecordHelper()
         self._serializers = [uuid_serializer, partial(json_serializer, fields=json_fields)]
 
-    async def get(self, id=None):
-        results = await self._db.where(table=self._table, id=id)
+    async def get(self, **where) -> dict:
+        results = await self._db.where(table=self._table, **where)
         if len(results) == 0:
             raise RecordNotFound('fleet_id "{}" does not exists'.format(id))
 
         return self._record.record_to_dict(results[0], normalize=self._serializers)
 
-    async def create(self, values):
+    async def create(self, values: dict) -> dict:
         values['created'] = int(time())
         values['updated'] = values['created']
         record = await self._db.insert(table=self._table, value_dict=values)
         return self._record.record_to_dict(record, normalize=self._serializers)
 
-    async def filter(self, limit=25, offset=0, order_by='created desc', **filter):
+    async def filter(self, limit=25, offset=0, order_by='created desc', **filter) -> list:
         record = await self._db.where(table=self._table, offset=offset, limit=limit, order_by=order_by, **filter)
         return self._record.record_to_dict(record, normalize=self._serializers)
 
-    async def delete(self, id):
-        await self._db.delete(table=self._table, where_dict={'id': id})
+    async def delete(self, **where):
+        await self._db.delete(table=self._table, where_dict=where)
 
-    async def update(self, id, values):
+    async def update(self, where_dict: dict, values: dict) -> dict:
         values['updated'] = int(time())
-        result = await self._db.update(table=self._table, where_dict={'id': id}, **values)
+        result = await self._db.update(table=self._table, where_dict=where_dict, **values)
         return self._record.record_to_dict(result, normalize=self._serializers)
 
 
@@ -194,7 +194,7 @@ class CRUDHTTPService:
             values[self._state_key] = request._state['user_subs'].get(self._state_key)
         try:
             id = request.match_info.get('id')
-            results = await self._model.update(id, values)
+            results = await self._model.update({'id': id}, values)
             if len(results) > 1:
                 return json_response({'error': "multiple records found with this id '{}'".format(id)}, status=400)
             return json_response(results[0])
@@ -206,7 +206,7 @@ class CRUDHTTPService:
             return json_response({'error': str(e)}, status=400)
 
     async def delete_record(self, service, request, *args, **kwargs):
-        return json_response(await self._model.delete(request.match_info.get('id')))
+        return json_response(await self._model.delete(id=request.match_info.get('id')))
 
 
 class CRUDTCPService:
@@ -266,7 +266,7 @@ class CRUDTCPService:
                 return {'error': v.errors}
 
         try:
-            return await self._model.update(id, params)
+            return await self._model.update({'id': id}, params)
         except RecordNotFound as e:
             return {'error': str(e)}
         except UniqueViolationError:
@@ -276,4 +276,4 @@ class CRUDTCPService:
 
     @api
     async def delete_record(self, id):
-        return await self._model.delete(id)
+        return await self._model.delete(id=id)
