@@ -1,5 +1,6 @@
 import asyncio
-from asyncio.coroutines import iscoroutine
+from asyncio.coroutines import iscoroutinefunction
+from asyncio.futures import Future
 from functools import partial
 from time import time
 from types import MethodType
@@ -54,8 +55,8 @@ class SignalMethodWrapper:
         assert func is not None
         assert name is not None
 
-    def __call__(self, *args, **kwds):
-        return self.instance._run_signals(self.name, self.func, *args, **kwds)
+    def __call__(self, *args, **kwargs):
+        return self.instance._run_signals(self.name, self.func, *args, **kwargs)
 
 
 class BaseSignal:
@@ -76,20 +77,26 @@ class BaseSignal:
 
     def _run_signals(self, name, func, *args, **kwargs):
         pre_signals = getattr(self, 'pre_{}'.format(name))
-        asyncio.ensure_future(self._run_coroutines(pre_signals, None, *args, **kwargs))
-        if iscoroutine(func):
-            rval = asyncio.ensure_future(func(*args, **kwargs))
-        else:
-            rval = func(*args, **kwargs)
         post_signals = getattr(self, 'post_{}'.format(name))
-        asyncio.ensure_future(self._run_coroutines(post_signals, rval, *args, **kwargs))
 
-    async def _run_coroutines(self, coroutines, rval, *args, **kwargs):
+        self._run_coroutines(pre_signals, None, *args, **kwargs)
+        if iscoroutinefunction(func):
+            result = asyncio.ensure_future(func(*args, **kwargs))
+            result.add_done_callback(partial(self._run_coroutines, post_signals, *args, **kwargs))
+        else:
+            result = func(*args, **kwargs)
+            self._run_coroutines(post_signals, result, *args, **kwargs)
+
+        return result
+
+    def _run_coroutines(self, coroutines, result, *args, **kwargs):
+        if type(result) is Future:
+            result = result.result()
         for coro in coroutines:
-            if iscoroutine(coro):
-                await coro(rval, *args, **kwargs)
+            if iscoroutinefunction(coro):
+                asyncio.ensure_future(coro(result, *args, **kwargs))
             else:
-                coro(rval, *args, **kwargs)
+                coro(result, *args, **kwargs)
 
 
 class CRUDModel(BaseSignal):
