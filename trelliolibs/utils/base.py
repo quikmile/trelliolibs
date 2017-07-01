@@ -76,13 +76,13 @@ class BaseSignal:
 
     def _run_signals(self, name, func, *args, **kwargs):
         pre_signals = getattr(self, 'pre_{}'.format(name))
-        asyncio.async(self._run_coroutines(pre_signals, None, *args, **kwargs))
+        asyncio.ensure_future(self._run_coroutines(pre_signals, None, *args, **kwargs))
         if iscoroutine(func):
-            rval = yield from func(*args, **kwargs)
+            rval = asyncio.ensure_future(func(*args, **kwargs))
         else:
             rval = func(*args, **kwargs)
         post_signals = getattr(self, 'post_{}'.format(name))
-        asyncio.async(self._run_coroutines(post_signals, rval, *args, **kwargs))
+        asyncio.ensure_future(self._run_coroutines(post_signals, rval, *args, **kwargs))
 
     async def _run_coroutines(self, coroutines, rval, *args, **kwargs):
         for coro in coroutines:
