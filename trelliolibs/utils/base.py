@@ -1,5 +1,8 @@
+import asyncio
+from asyncio.coroutines import iscoroutine
 from functools import partial
 from time import time
+from types import MethodType
 
 from asyncpg.exceptions import UniqueViolationError, UndefinedColumnError
 from trellio import request, get, put, post, delete, api
@@ -40,8 +43,60 @@ def extract_request_params(request, filter_keys=()):
     return params
 
 
-class CRUDModel:
-    def __init__(self, table='', json_fields=()):
+class SignalMethodWrapper:
+    """
+    Wrapper object for a method to be called.
+    """
+
+    def __init__(self, instance, func, name):
+        self.instance, self.func, self.name = instance, func, name
+        assert instance is not None
+        assert func is not None
+        assert name is not None
+
+    def __call__(self, *args, **kwds):
+        return self.instance._run_signals(self.name, self.func, *args, **kwds)
+
+
+class BaseSignal:
+    registered_methods = []
+
+    def __init__(self, signals: bool = True):
+        if signals:
+            self._enable_signals()
+
+    def _enable_signals(self):
+        for method in self.registered_methods:
+            self.__setattr__('pre_{}'.format(method), [])
+            self.__setattr__('post_{}'.format(method), [])
+            func = getattr(self, method)
+            if type(func) is MethodType:
+                wrapper = SignalMethodWrapper(self, func, method)
+                setattr(self, method, wrapper)
+
+    def _run_signals(self, name, func, *args, **kwargs):
+        pre_signals = getattr(self, 'pre_{}'.format(name))
+        asyncio.async(self._run_coroutines(pre_signals, None, *args, **kwargs))
+        if iscoroutine(func):
+            rval = yield from func(*args, **kwargs)
+        else:
+            rval = func(*args, **kwargs)
+        post_signals = getattr(self, 'post_{}'.format(name))
+        asyncio.async(self._run_coroutines(post_signals, rval, *args, **kwargs))
+
+    async def _run_coroutines(self, coroutines, rval, *args, **kwargs):
+        for coro in coroutines:
+            if iscoroutine(coro):
+                await coro(rval, *args, **kwargs)
+            else:
+                coro(rval, *args, **kwargs)
+
+
+class CRUDModel(BaseSignal):
+    registered_methods = ['get', 'filter', 'create', 'update', 'delete']
+
+    def __init__(self, table: str = '', json_fields: list = (), signals: bool = True):
+        super(CRUDModel, self).__init__(signals=signals)
         self._table = table
         self._db = get_db_adapter()
         self._record = RecordHelper()
