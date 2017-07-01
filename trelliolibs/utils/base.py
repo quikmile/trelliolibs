@@ -80,13 +80,13 @@ class BaseSignal:
         post_signals = getattr(self, 'post_{}'.format(name))
 
         self._run_coroutines(pre_signals, None, *args, **kwargs)
+
         if iscoroutinefunction(func):
             result = asyncio.ensure_future(func(*args, **kwargs))
-            result.add_done_callback(partial(self._run_coroutines, post_signals, *args, **kwargs))
         else:
             result = func(*args, **kwargs)
-            self._run_coroutines(post_signals, result, *args, **kwargs)
 
+        self._run_coroutines(post_signals, result, *args, **kwargs)
         return result
 
     def _run_coroutines(self, coroutines, result, *args, **kwargs):
