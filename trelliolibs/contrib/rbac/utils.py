@@ -31,7 +31,7 @@ async def register_service_resources():
                 resource_dict[path].append(method)
             else:
                 resource_dict[path] = [method]
-    result = await rbac_client.bulk_update_and_reassign_collection_roles(service_name, service_version, http_resources=resource_dict)
+    result = await rbac_client.create_service_resources(service_name, service_version, http_resources=resource_dict)
     _logger.info('RBAC auto-create service resources response %s' % str(json.dumps(result)))
 
 
