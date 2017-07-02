@@ -1,6 +1,5 @@
-import asyncio
 from asyncio.coroutines import iscoroutinefunction
-from asyncio.futures import Future
+from asyncio.tasks import Task, ensure_future
 from functools import partial
 from time import time
 from types import MethodType
@@ -79,22 +78,29 @@ class BaseSignal:
         pre_signals = getattr(self, 'pre_{}'.format(name))
         post_signals = getattr(self, 'post_{}'.format(name))
 
-        self._run_coroutines(pre_signals, None, *args, **kwargs)
+        if pre_signals:
+            self._run_coroutines(pre_signals, *args, **kwargs)
 
         if iscoroutinefunction(func):
-            result = asyncio.ensure_future(func(*args, **kwargs))
+            result = ensure_future(func(*args, **kwargs))
+            if post_signals:
+                result.add_done_callback(partial(self._run_coroutines, post_signals, *args, **kwargs))
         else:
             result = func(*args, **kwargs)
-
-        self._run_coroutines(post_signals, result, *args, **kwargs)
+            if post_signals:
+                self._run_coroutines(post_signals, result)
         return result
 
-    def _run_coroutines(self, coroutines, result, *args, **kwargs):
-        if type(result) is Future:
-            result = result.result()
+    def _run_coroutines(self, coroutines, *args, **kwargs):
+        args = list(args)
+        result = None
+        if len(args) > 0 and type(args[-1]) is Task:
+            task = args.pop()
+            result = task.result()
+
         for coro in coroutines:
             if iscoroutinefunction(coro):
-                asyncio.ensure_future(coro(result, *args, **kwargs))
+                ensure_future(coro(result, *args, **kwargs))
             else:
                 coro(result, *args, **kwargs)
 
