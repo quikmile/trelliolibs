@@ -16,6 +16,8 @@ async def register_service_resources():
         if isinstance(i,RBACTCPClient):
             rbac_client=i
             break
+    if not rbac_client:
+        rbac_client = RBACTCPClient()
     api_methods = []
     exclude_resources = ['/ping', '/_stats', '/ping/', '/_stats/']
     for i in dir(http_service):
