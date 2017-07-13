@@ -9,8 +9,12 @@ from .helpers import json_response
 
 class TrellioValidator(Validator):
     def _validate_type_uuid(self, value):
-        if isinstance(value, UUID):
-            return True
+        try:
+            UUID(value)
+        except ValueError:
+            pass
+        else:
+            return value
 
 
 def validate_schema(schema=None, allow_unknown=False):
