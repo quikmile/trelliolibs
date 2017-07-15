@@ -118,7 +118,7 @@ class CRUDModel(BaseSignal):
     async def get(self, **where) -> dict:
         results = await self._db.where(table=self._table, **where)
         if len(results) == 0:
-            raise RecordNotFound('fleet_id "{}" does not exists'.format(id))
+            raise RecordNotFound('record does not exists')
 
         return self._record.record_to_dict(results[0], normalize=self._serializers)
 
