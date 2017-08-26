@@ -1,5 +1,5 @@
+from asyncio import Task, ensure_future, gather
 from asyncio.coroutines import iscoroutinefunction
-from asyncio.tasks import Task, ensure_future
 from functools import partial
 from time import time
 from types import MethodType
@@ -115,6 +115,17 @@ class CRUDModel(BaseSignal):
         self._record = RecordHelper()
         self._serializers = [uuid_serializer, partial(json_serializer, fields=json_fields)]
 
+    async def count(self, **filter) -> int:
+        query = """select count(id) from {}""".format(self._table)
+        if filter:
+            query += self._db._where_query(filter, None, None, None)
+
+        pool = await self._db.get_pool()
+        async with pool.acquire() as con:
+            results = await con.fetchrow(query)
+
+        return results[0]
+
     async def get(self, **where) -> dict:
         results = await self._db.where(table=self._table, **where)
         if len(results) == 0:
@@ -139,6 +150,21 @@ class CRUDModel(BaseSignal):
         values['updated'] = int(time())
         result = await self._db.update(table=self._table, where_dict=where_dict, **values)
         return self._record.record_to_dict(result, normalize=self._serializers)
+
+    async def paginate(self, limit=10, offset=0, order_by='created desc', **filter) -> dict:
+        coros = [self.filter(limit=limit, offset=offset, order_by=order_by, **filter), self.count(**filter)]
+        records, count = gather(*coros, return_exceptions=True)
+        total_pages = (count / limit) + 1
+        last_offset = limit * (total_pages - 1)
+        next_offset = offset + limit
+        if next_offset == last_offset:
+            next_offset = None
+        prev_offset = offset - limit
+        if offset == 0:
+            prev_offset = None
+
+        return {'records': records, 'next_offset': next_offset, 'prev_offset': prev_offset, 'last_offset': last_offset,
+                'total_pages': total_pages, 'total_records': count, 'limit': limit}
 
 
 class CRUDTCPClient:

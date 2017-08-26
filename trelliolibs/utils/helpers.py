@@ -3,7 +3,7 @@ from uuid import UUID
 
 from asyncpg.exceptions import DuplicateTableError
 from asyncpg.exceptions import UndefinedTableError
-from trellio.wrappers import Response
+from trellio.wrappers import Response, Request
 
 try:
     import ujson as json
@@ -13,6 +13,40 @@ except:
 
 def json_response(data, status=200):
     return Response(content_type='application/json', body=json.dumps(data).encode('utf-8'), status=status)
+
+
+def paginated_json_response(request: Request, records: list, limit=10, prev_offset=None, next_offset=None,
+                            last_offset=None, total_records=None, total_pages=None) -> Response:
+    url = '{}://{}{}?limit={}'.format(request.scheme, request.host, request.path, limit)
+    url += '&offset={}'
+
+    links = []
+    if next_offset:
+        next_url = url.format(next_offset)
+        links.append('<{}>; rel="{}"'.format(next_url, 'next'))
+
+    if prev_offset:
+        prev_url = url.format(prev_offset)
+        links.append('<{}>; rel="{}"'.format(prev_url, 'prev'))
+
+    if last_offset:
+        last_url = url.format(last_offset)
+        links.append('<{}>; rel="{}"'.format(last_url, 'last'))
+
+    if next_offset - limit >= 0:
+        first_url = url.format(offset=0)
+        links.append('<{}>; rel="{}"'.format(first_url, 'first'))
+
+    if total_records:
+        links.append('<{}>; rel="{}"'.format(total_records, 'total_records'))
+
+    if total_pages:
+        links.append('<{}>; rel="{}"'.format(total_pages, 'total_pages'))
+
+    headers = {'Link': ', '.join(links)} if links else {}
+
+    return Response(content_type='application/json', body=json.dumps(records).encode('utf-8'), status=200,
+                    headers=headers)
 
 
 def json_file_to_dict(_file: str) -> dict:
