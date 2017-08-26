@@ -15,7 +15,7 @@ def json_response(data, status=200):
     return Response(content_type='application/json', body=json.dumps(data).encode('utf-8'), status=status)
 
 
-def paginated_json_response(request: Request, records: list, limit=10, prev_offset=None, next_offset=None,
+def paginated_json_response(request: Request, records: list = (), limit=10, prev_offset=None, next_offset=None,
                             last_offset=None, total_records=None, total_pages=None) -> Response:
     url = '{}://{}{}?limit={}'.format(request.scheme, request.host, request.path, limit)
     url += '&offset={}'
