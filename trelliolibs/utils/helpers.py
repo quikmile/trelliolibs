@@ -26,6 +26,10 @@ def paginated_json_response(request: Request, records: list = (), limit=10, prev
     url = '{}?limit={}'.format(base_url, limit)
 
     links = []
+
+    first_url = url + '&offset={}'.format(0)
+    links.append('<{}>; rel="{}"'.format(first_url, 'first'))
+
     if next_offset:
         next_url = url + '&offset={}'.format(next_offset)
         links.append('<{}>; rel="{}"'.format(next_url, 'next'))
@@ -37,10 +41,6 @@ def paginated_json_response(request: Request, records: list = (), limit=10, prev
     if last_offset:
         last_url = url + '&offset={}'.format(last_offset)
         links.append('<{}>; rel="{}"'.format(last_url, 'last'))
-
-    if next_offset - limit >= 0:
-        first_url = url + '&offset={}'.format(0)
-        links.append('<{}>; rel="{}"'.format(first_url, 'first'))
 
     if total_records:
         links.append('<{}>; rel="{}"'.format(total_records, 'total_records'))
