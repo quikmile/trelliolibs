@@ -124,7 +124,7 @@ class CRUDModel(BaseSignal):
         async with pool.acquire() as con:
             results = await con.fetchrow(query)
 
-        return results[0]
+        return int(results[0])
 
     async def get(self, **where) -> dict:
         results = await self._db.where(table=self._table, **where)
@@ -154,7 +154,7 @@ class CRUDModel(BaseSignal):
     async def paginate(self, limit=10, offset=0, order_by='created desc', **filter) -> dict:
         coros = [self.filter(limit=limit, offset=offset, order_by=order_by, **filter), self.count(**filter)]
         records, count = await gather(*coros, return_exceptions=True)
-        total_pages = (count / limit) + 1
+        total_pages = (count // limit) + 1
         last_offset = limit * (total_pages - 1)
         next_offset = offset + limit
         if next_offset == last_offset:
