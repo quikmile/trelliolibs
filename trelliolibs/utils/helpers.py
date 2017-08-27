@@ -17,7 +17,13 @@ def json_response(data, status=200):
 
 def paginated_json_response(request: Request, records: list = (), limit=10, prev_offset=None, next_offset=None,
                             last_offset=None, total_records=None, total_pages=None) -> Response:
-    url = '{}://{}{}?limit={}'.format(request.scheme, request.host, request.path, limit)
+    if request.headers.get('X-Original-URI'):
+        path = request.headers['X-Original-URI'].split('?')[0]
+        base_url = '{}://{}{}'.format(request.scheme, request.host, path)
+    else:
+        base_url = request.path
+
+    url = '{}?limit={}'.format(base_url, limit)
 
     links = []
     if next_offset:
