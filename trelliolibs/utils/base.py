@@ -153,7 +153,7 @@ class CRUDModel(BaseSignal):
 
     async def paginate(self, limit=10, offset=0, order_by='created desc', **filter) -> dict:
         coros = [self.filter(limit=limit, offset=offset, order_by=order_by, **filter), self.count(**filter)]
-        records, count = gather(*coros, return_exceptions=True)
+        records, count = await gather(*coros, return_exceptions=True)
         total_pages = (count / limit) + 1
         last_offset = limit * (total_pages - 1)
         next_offset = offset + limit
