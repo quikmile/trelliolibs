@@ -34,7 +34,8 @@ class RequestUser:
 
     async def pre_request(self, service, request, *args, **kwargs):
         user_id = request.headers.get('x-user-id', None)
-        user_subs = request.headers.get('x-user-subs', None)
+        user_subs = request.headers.get('x-user-subs', '')
+        subscriptions = request.headers.get('x-subscriptions', '')
 
         if not user_id and not user_subs:
             rbac_client = RBACTCPClient()
@@ -42,5 +43,6 @@ class RequestUser:
             user_id = response.get('user_id')
             user_subs = response.get('user_subs')
 
+        request.__setitem__('subscriptions', json.loads(subscriptions))
         request.__setitem__('user_id', user_id)
         request.__setitem__('user_subs', json.loads(user_subs))
