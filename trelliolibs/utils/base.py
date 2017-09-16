@@ -1,16 +1,17 @@
 from asyncio import Task, ensure_future, gather
 from asyncio.coroutines import iscoroutinefunction
-from functools import partial
+from asyncio.tasks import wait_for
+from functools import partial, wraps
 from time import time
 from types import MethodType
 
 from asyncpg.exceptions import UniqueViolationError, UndefinedColumnError
 from trellio import request, get, put, post, delete, api
+from trellio.utils.ordered_class_member import OrderedClassMembers
 from trelliopg import get_db_adapter
 
-from trelliolibs.utils.helpers import json_serializer
 from .decorators import TrellioValidator
-from .helpers import RecordHelper, uuid_serializer, json_response
+from .helpers import RecordHelper, uuid_serializer, json_response, json_serializer
 
 
 class RecordNotFound(Exception):
@@ -19,6 +20,26 @@ class RecordNotFound(Exception):
 
 class RequestKeyError(Exception):
     pass
+
+
+def view_wrapper(view):
+    @wraps(view)
+    async def f(self, request, *args, **kwargs):
+        dispatch = getattr(self, 'dispatch', None)
+        if dispatch:
+            wait_for(await self.dispatch(request, *args, **kwargs), None)
+        return await view(self, request, *args, **kwargs)
+
+    return f
+
+
+class WrappedViewMeta(OrderedClassMembers):
+    def __new__(self, name, bases, classdict):
+
+        for name, attr in classdict.items():
+            if callable(attr) and getattr(attr, 'is_http_method', False):
+                classdict[name] = view_wrapper(attr)
+        return super().__new__(self, name, bases, classdict)
 
 
 def extract_request_params(request, filter_keys=()):
