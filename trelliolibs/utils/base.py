@@ -27,10 +27,10 @@ def view_wrapper(view):
         result = None
         dispatch = getattr(self, 'dispatch', None)
         if dispatch:
-            result = await dispatch(self, request, *args, **kwargs)
+            result = await self.dispatch(request, *args, **kwargs)
             if result:
                 return result
-        return await view(self, request, result, *args, **kwargs)
+        return await view(self, request, *args, **kwargs)
 
     return f
 
