@@ -1,5 +1,5 @@
 from asyncio import Task, ensure_future, gather
-from asyncio.coroutines import iscoroutinefunction
+from asyncio.coroutines import iscoroutinefunction, coroutine
 from asyncio.tasks import wait_for
 from functools import partial, wraps
 from time import time
@@ -27,8 +27,8 @@ def view_wrapper(view):
     async def f(self, request, *args, **kwargs):
         dispatch = getattr(self, 'dispatch', None)
         if dispatch:
-            wait_for(await self.dispatch(request, *args, **kwargs), None)
-        return await view(self, request, *args, **kwargs)
+            return await dispatch(self, view, request, *args, **kwargs)
+        view(self, request, *args, **kwargs)
 
     return f
 
@@ -88,42 +88,40 @@ class BaseSignal:
 
     def _enable_signals(self):
         for method in self.registered_methods:
-            self.__setattr__('pre_{}'.format(method), [])
-            self.__setattr__('post_{}'.format(method), [])
             func = getattr(self, method)
             if type(func) is MethodType:
                 wrapper = SignalMethodWrapper(self, func, method)
                 setattr(self, method, wrapper)
 
     def _run_signals(self, name, func, *args, **kwargs):
-        pre_signals = getattr(self, 'pre_{}'.format(name))
-        post_signals = getattr(self, 'post_{}'.format(name))
+        pre_signal = getattr(self, 'pre_{}'.format(name), None)
+        post_signal = getattr(self, 'post_{}'.format(name), None)
 
-        if pre_signals:
-            self._run_coroutines(pre_signals, *args, **kwargs)
+        if pre_signal:
+            self._run_coroutine(pre_signal, *args, **kwargs)
 
-        if iscoroutinefunction(func):
-            result = ensure_future(func(*args, **kwargs))
-            if post_signals:
-                result.add_done_callback(partial(self._run_coroutines, post_signals, *args, **kwargs))
-        else:
-            result = func(*args, **kwargs)
-            if post_signals:
-                self._run_coroutines(post_signals, result)
-        return result
+        wrapped_func = func
+        if not iscoroutinefunction(func):
+            wrapped_func = coroutine(func)
 
-    def _run_coroutines(self, coroutines, *args, **kwargs):
+        future = ensure_future(wrapped_func(*args, **kwargs))
+        if post_signal:
+            future.add_done_callback(partial(self._run_coroutine, post_signal, *args, **kwargs))
+        return future
+
+    def _run_coroutine(self, coro, *args, **kwargs):
+        print(locals())
         args = list(args)
         result = None
         if len(args) > 0 and type(args[-1]) is Task:
             task = args.pop()
             result = task.result()
 
-        for coro in coroutines:
-            if iscoroutinefunction(coro):
-                ensure_future(coro(result, *args, **kwargs))
-            else:
-                coro(result, *args, **kwargs)
+        wrapper_coro = coro
+        if not iscoroutinefunction(coro):
+            wrapper_coro = coroutine(coro)
+
+        ensure_future(wrapper_coro(result, *args, **kwargs))
 
 
 class CRUDModel(BaseSignal):
