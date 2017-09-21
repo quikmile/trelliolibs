@@ -24,7 +24,6 @@ class RequestKeyError(Exception):
 def view_wrapper(view):
     @wraps(view)
     async def f(self, request, *args, **kwargs):
-        result = None
         dispatch = getattr(self, 'dispatch', None)
         if dispatch:
             result = await self.dispatch(request, *args, **kwargs)
