@@ -1,9 +1,8 @@
 from asyncio import Task, ensure_future, gather
 from asyncio.coroutines import iscoroutinefunction, coroutine
-from asyncio.tasks import wait_for
 from functools import partial, wraps
 from time import time
-from types import MethodType
+from types import MethodType, FunctionType
 
 from asyncpg.exceptions import UniqueViolationError, UndefinedColumnError
 from trellio import request, get, put, post, delete, api
@@ -25,10 +24,13 @@ class RequestKeyError(Exception):
 def view_wrapper(view):
     @wraps(view)
     async def f(self, request, *args, **kwargs):
+        result = None
         dispatch = getattr(self, 'dispatch', None)
         if dispatch:
-            return await dispatch(self, view, request, *args, **kwargs)
-        view(self, request, *args, **kwargs)
+            result = await dispatch(self, request, *args, **kwargs)
+            if result:
+                return result
+        return await view(self, request, result, *args, **kwargs)
 
     return f
 
@@ -37,7 +39,7 @@ class WrappedViewMeta(OrderedClassMembers):
     def __new__(self, name, bases, classdict):
 
         for name, attr in classdict.items():
-            if callable(attr) and getattr(attr, 'is_http_method', False):
+            if isinstance(attr, FunctionType) and getattr(attr, 'is_http_method', False):
                 classdict[name] = view_wrapper(attr)
         return super().__new__(self, name, bases, classdict)
 
