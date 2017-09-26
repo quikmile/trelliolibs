@@ -4,8 +4,7 @@ from uuid import UUID
 from cerberus import Validator
 from trellio import HTTPService, TCPService, HTTPView, TCPView
 
-from .helpers import json_response, type_cast_payload
-from .parsers import multipart_parser
+from .helpers import json_response
 
 
 class TrellioValidator(Validator):
@@ -26,14 +25,7 @@ def validate_schema(schema=None, allow_unknown=False):
                 v = TrellioValidator(schema, allow_unknown=allow_unknown)
                 if isinstance(self, HTTPService) or isinstance(self, HTTPView):
                     request = args[0]
-                    if request.content_type == 'multipart/form-data':
-                        multipart_data = await multipart_parser(request, file_handler=None)
-                        data = await type_cast_payload(schema, multipart_data['data'])
-                        payload = {**multipart_data['files'], **data}
-                    elif request.content_type == 'application/json':
-                        payload = await request.json()
-                    else:
-                        return json_response({'error': 'Unsupported Content-Type'}, status=400)
+                    payload = await request.json()
                     if not v.validate(payload):
                         return json_response({'error': v.errors}, status=400)
                 elif isinstance(self, TCPService) or isinstance(self, TCPView):
