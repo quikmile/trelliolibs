@@ -4,7 +4,7 @@ from uuid import UUID
 from cerberus import Validator
 from trellio import HTTPService, TCPService, HTTPView, TCPView
 
-from .helpers import json_response
+from .helpers import json_response, type_cast_payload
 from .parsers import multipart_parser
 
 
@@ -28,7 +28,8 @@ def validate_schema(schema=None, allow_unknown=False):
                     request = args[0]
                     if request.content_type == 'multipart/form-data':
                         multipart_data = await multipart_parser(request, file_handler=None)
-                        payload = {**multipart_data['files'], **multipart_data['data']}
+                        data = await type_cast_payload(schema, multipart_data['data'])
+                        payload = {**multipart_data['files'], **data}
                     elif request.content_type == 'application/json':
                         payload = await request.json()
                     else:
