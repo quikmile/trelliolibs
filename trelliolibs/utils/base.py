@@ -1,16 +1,16 @@
-from asyncio.coroutines import iscoroutinefunction
-from asyncio.tasks import Task, ensure_future
-from functools import partial
+from asyncio import Task, ensure_future, gather
+from asyncio.coroutines import iscoroutinefunction, coroutine
+from functools import partial, wraps
 from time import time
-from types import MethodType
+from types import MethodType, FunctionType
 
 from asyncpg.exceptions import UniqueViolationError, UndefinedColumnError
 from trellio import request, get, put, post, delete, api
+from trellio.utils.ordered_class_member import OrderedClassMembers
 from trelliopg import get_db_adapter
 
-from trelliolibs.utils.helpers import json_serializer
 from .decorators import TrellioValidator
-from .helpers import RecordHelper, uuid_serializer, json_response
+from .helpers import RecordHelper, uuid_serializer, json_response, json_serializer
 
 
 class RecordNotFound(Exception):
@@ -19,6 +19,28 @@ class RecordNotFound(Exception):
 
 class RequestKeyError(Exception):
     pass
+
+
+def view_wrapper(view):
+    @wraps(view)
+    async def f(self, request, *args, **kwargs):
+        dispatch = getattr(self, 'dispatch', None)
+        if dispatch:
+            result = await self.dispatch(request, *args, **kwargs)
+            if result:
+                return result
+        return await view(self, request, *args, **kwargs)
+
+    return f
+
+
+class WrappedViewMeta(OrderedClassMembers):
+    def __new__(self, name, bases, classdict):
+
+        for name, attr in classdict.items():
+            if isinstance(attr, FunctionType) and getattr(attr, 'is_http_method', False):
+                classdict[name] = view_wrapper(attr)
+        return super().__new__(self, name, bases, classdict)
 
 
 def extract_request_params(request, filter_keys=()):
@@ -67,42 +89,40 @@ class BaseSignal:
 
     def _enable_signals(self):
         for method in self.registered_methods:
-            self.__setattr__('pre_{}'.format(method), [])
-            self.__setattr__('post_{}'.format(method), [])
             func = getattr(self, method)
             if type(func) is MethodType:
                 wrapper = SignalMethodWrapper(self, func, method)
                 setattr(self, method, wrapper)
 
     def _run_signals(self, name, func, *args, **kwargs):
-        pre_signals = getattr(self, 'pre_{}'.format(name))
-        post_signals = getattr(self, 'post_{}'.format(name))
+        pre_signal = getattr(self, 'pre_{}'.format(name), None)
+        post_signal = getattr(self, 'post_{}'.format(name), None)
 
-        if pre_signals:
-            self._run_coroutines(pre_signals, *args, **kwargs)
+        if pre_signal:
+            self._run_coroutine(pre_signal, *args, **kwargs)
 
-        if iscoroutinefunction(func):
-            result = ensure_future(func(*args, **kwargs))
-            if post_signals:
-                result.add_done_callback(partial(self._run_coroutines, post_signals, *args, **kwargs))
-        else:
-            result = func(*args, **kwargs)
-            if post_signals:
-                self._run_coroutines(post_signals, result)
-        return result
+        wrapped_func = func
+        if not iscoroutinefunction(func):
+            wrapped_func = coroutine(func)
 
-    def _run_coroutines(self, coroutines, *args, **kwargs):
+        future = ensure_future(wrapped_func(*args, **kwargs))
+        if post_signal:
+            future.add_done_callback(partial(self._run_coroutine, post_signal, *args, **kwargs))
+        return future
+
+    def _run_coroutine(self, coro, *args, **kwargs):
+        print(locals())
         args = list(args)
         result = None
         if len(args) > 0 and type(args[-1]) is Task:
             task = args.pop()
             result = task.result()
 
-        for coro in coroutines:
-            if iscoroutinefunction(coro):
-                ensure_future(coro(result, *args, **kwargs))
-            else:
-                coro(result, *args, **kwargs)
+        wrapper_coro = coro
+        if not iscoroutinefunction(coro):
+            wrapper_coro = coroutine(coro)
+
+        ensure_future(wrapper_coro(result, *args, **kwargs))
 
 
 class CRUDModel(BaseSignal):
@@ -115,10 +135,21 @@ class CRUDModel(BaseSignal):
         self._record = RecordHelper()
         self._serializers = [uuid_serializer, partial(json_serializer, fields=json_fields)]
 
+    async def count(self, **filter) -> int:
+        query = """select count(id) from {}""".format(self._table)
+        if filter:
+            query += self._db._where_query(filter, None, None, None)
+
+        pool = await self._db.get_pool()
+        async with pool.acquire() as con:
+            results = await con.fetchrow(query)
+
+        return int(results[0])
+
     async def get(self, **where) -> dict:
         results = await self._db.where(table=self._table, **where)
         if len(results) == 0:
-            raise RecordNotFound('fleet_id "{}" does not exists'.format(id))
+            raise RecordNotFound('record does not exists')
 
         return self._record.record_to_dict(results[0], normalize=self._serializers)
 
@@ -139,6 +170,25 @@ class CRUDModel(BaseSignal):
         values['updated'] = int(time())
         result = await self._db.update(table=self._table, where_dict=where_dict, **values)
         return self._record.record_to_dict(result, normalize=self._serializers)
+
+    async def paginate(self, limit: int = 10, offset: int = 0, order_by: str = 'created desc', **filter) -> dict:
+        coros = [self.filter(limit=limit, offset=offset, order_by=order_by, **filter), self.count(**filter)]
+        records, count = await gather(*coros, return_exceptions=True)
+
+        total_pages = (count // limit) + 1
+
+        last_offset = limit * (total_pages - 1)
+        next_offset = offset + limit
+
+        if offset == last_offset:
+            next_offset = None
+
+        prev_offset = offset - limit
+        if offset == 0:
+            prev_offset = None
+
+        return {'records': records, 'next_offset': next_offset, 'prev_offset': prev_offset, 'last_offset': last_offset,
+                'total_pages': total_pages, 'total_records': count, 'limit': limit}
 
 
 class CRUDTCPClient:
