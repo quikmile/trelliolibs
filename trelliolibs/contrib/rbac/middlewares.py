@@ -25,8 +25,7 @@ class VerifyUserAccess:
                                                                resource_type='http'), timeout=None)
         if not access['access']:
             return Response(status=400, content_type='application/json',
-                            body=json.dumps(
-                                access).encode())
+                            body=json.dumps(access).encode())
 
 
 class RequestUser:
