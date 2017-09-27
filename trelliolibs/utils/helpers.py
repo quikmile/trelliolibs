@@ -49,7 +49,7 @@ def paginated_json_response(request: Request, records: list = (), limit=10, prev
         links.append('<{}>; rel="{}"'.format(total_pages, 'total_pages'))
 
     headers = {'Link': ', '.join(links)} if links else {}
-
+    headers['Access-Control-Expose-Headers'] = 'Link'
     return Response(content_type='application/json', body=json.dumps(records).encode('utf-8'), status=200,
                     headers=headers)
 
@@ -172,7 +172,7 @@ async def type_cast_payload(schema: dict, payload: dict):
         if field_type in ['integer', 'string', 'float']:
             payload_value = payload.get(field)
             if not payload_value:
-                 break
+                break
             try:
                 payload[field] = cerberus_type_map[field_type](payload_value)
             except ValueError:
