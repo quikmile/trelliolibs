@@ -155,3 +155,26 @@ async def drop_table(conn, query):
             return False
     else:
         return False
+
+
+async def type_cast_payload(schema: dict, payload: dict):
+    """
+    Make schema little forgiving! use case:  multipart data
+    """
+    # In ideal case this should be done using serializer. A temp measure right now
+    cerberus_type_map = {
+        'string': str,
+        'integer': int,
+        'float': float,
+    }
+    for field, validator in schema.items():
+        field_type = validator['type']
+        if field_type in ['integer', 'string', 'float']:
+            payload_value = payload.get(field)
+            if not payload_value:
+                 break
+            try:
+                payload[field] = cerberus_type_map[field_type](payload_value)
+            except ValueError:
+                break
+    return payload
