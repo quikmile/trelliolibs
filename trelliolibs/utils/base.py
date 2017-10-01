@@ -45,12 +45,14 @@ class WrappedViewMeta(OrderedClassMembers):
 
 def extract_request_params(request, filter_keys=()):
     params = dict()
+    params['limit'] = 25
     if request.get('limit'):
         if request.get('limit').upper() == 'ALL':
             params['limit'] = 'ALL'
             request.pop('limit')
         else:
             params['limit'] = int(request.pop('limit', 25))
+
     params['offset'] = int(request.pop('offset', 0))
     params['order_by'] = request.pop('order_by', 'created desc')
 
