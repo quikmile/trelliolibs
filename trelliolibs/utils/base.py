@@ -52,8 +52,8 @@ def extract_request_params(request, filter_keys=()):
         else:
             params['limit'] = request.pop('limit')
 
-    params['offset'] = request.pop('offset', 0)
-    params['order_by'] = request.pop('order_by', 'created desc')
+    params['offset'] = request.pop('offset', None)
+    params['order_by'] = request.pop('order_by', None)
 
     if filter_keys:
         wrong_keys = [key for key in request.keys() if key not in filter_keys]
