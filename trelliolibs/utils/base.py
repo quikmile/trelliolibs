@@ -183,11 +183,10 @@ class CRUDModel(BaseSignal):
         if offset is None:
             offset = 0
 
-        if limit == 'ALL':
+        if limit == 'ALL' or limit is None:
             limit = count
 
-        if limit is None:
-            limit = count
+        limit = int(limit)
 
         total_pages = (count // limit) + 1
 
