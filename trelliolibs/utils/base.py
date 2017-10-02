@@ -45,6 +45,8 @@ class WrappedViewMeta(OrderedClassMembers):
 
 def extract_request_params(request, filter_keys=()):
     params = dict()
+
+    params['limit'] = 'ALL'
     if request.get('limit'):
         if request.get('limit').upper() == 'ALL':
             params['limit'] = 'ALL'
@@ -52,8 +54,8 @@ def extract_request_params(request, filter_keys=()):
         else:
             params['limit'] = request.pop('limit')
 
-    params['offset'] = request.pop('offset', None)
-    params['order_by'] = request.pop('order_by', None)
+    params['offset'] = request.pop('offset', 0)
+    params['order_by'] = request.pop('order_by', 'created desc')
 
     if filter_keys:
         wrong_keys = [key for key in request.keys() if key not in filter_keys]
@@ -178,7 +180,10 @@ class CRUDModel(BaseSignal):
         coros = [self.filter(limit=limit, offset=offset, order_by=order_by, **filter), self.count(**filter)]
         records, count = await gather(*coros, return_exceptions=True)
 
-        if limit == 'ALL':
+        if offset is None:
+            offset = 0
+
+        if limit == 'ALL' or limit == None:
             limit = per_page
 
         total_pages = (count // limit) + 1
