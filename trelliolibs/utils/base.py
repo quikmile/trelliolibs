@@ -46,7 +46,6 @@ class WrappedViewMeta(OrderedClassMembers):
 def extract_request_params(request, filter_keys=()):
     params = dict()
 
-    params['limit'] = 'ALL'
     if request.get('limit'):
         if request.get('limit').upper() == 'ALL':
             params['limit'] = 'ALL'
@@ -54,8 +53,10 @@ def extract_request_params(request, filter_keys=()):
         else:
             params['limit'] = request.pop('limit')
 
-    params['offset'] = request.pop('offset', 0)
-    params['order_by'] = request.pop('order_by', 'created desc')
+    if request.get('offset'):
+        params['offset'] = request.pop('offset')
+    if request.get('order_by'):
+        params['order_by'] = request.pop('order_by')
 
     if filter_keys:
         wrong_keys = [key for key in request.keys() if key not in filter_keys]
