@@ -45,16 +45,18 @@ class WrappedViewMeta(OrderedClassMembers):
 
 def extract_request_params(request, filter_keys=()):
     params = dict()
-    params['limit'] = 25
+
     if request.get('limit'):
         if request.get('limit').upper() == 'ALL':
             params['limit'] = 'ALL'
             request.pop('limit')
         else:
-            params['limit'] = int(request.pop('limit', 25))
+            params['limit'] = request.pop('limit')
 
-    params['offset'] = int(request.pop('offset', 0))
-    params['order_by'] = request.pop('order_by', 'created desc')
+    if request.get('offset'):
+        params['offset'] = request.pop('offset')
+    if request.get('order_by'):
+        params['order_by'] = request.pop('order_by')
 
     if filter_keys:
         wrong_keys = [key for key in request.keys() if key not in filter_keys]
@@ -162,7 +164,7 @@ class CRUDModel(BaseSignal):
         record = await self._db.insert(table=self._table, value_dict=values)
         return self._record.record_to_dict(record, normalize=self._serializers)
 
-    async def filter(self, limit=25, offset=0, order_by='created desc', **filter) -> list:
+    async def filter(self, limit=None, offset=None, order_by='created desc', **filter) -> list:
         record = await self._db.where(table=self._table, offset=offset, limit=limit, order_by=order_by, **filter)
         return self._record.record_to_dict(record, normalize=self._serializers)
 
@@ -174,13 +176,17 @@ class CRUDModel(BaseSignal):
         result = await self._db.update(table=self._table, where_dict=where_dict, **values)
         return self._record.record_to_dict(result, normalize=self._serializers)
 
-    async def paginate(self, limit: int = 10, offset: int = 0, order_by: str = 'created desc', per_page=15,
-                       **filter) -> dict:
+    async def paginate(self, limit=15, offset: int = 0, order_by: str = 'created desc', **filter) -> dict:
         coros = [self.filter(limit=limit, offset=offset, order_by=order_by, **filter), self.count(**filter)]
         records, count = await gather(*coros, return_exceptions=True)
 
-        if limit == 'ALL':
-            limit = per_page
+        if offset is None:
+            offset = 0
+
+        if limit == 'ALL' or limit is None:
+            limit = count
+
+        limit = int(limit)
 
         total_pages = (count // limit) + 1
 
