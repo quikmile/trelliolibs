@@ -187,6 +187,7 @@ class CRUDModel(BaseSignal):
             limit = count
 
         limit = int(limit)
+        offset = int(offset)
 
         total_pages = (count // limit) + 1
 
