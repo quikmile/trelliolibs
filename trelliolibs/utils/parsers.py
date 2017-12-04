@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 from aiohttp import MultipartReader, BodyPartReader
+from aiohttp.hdrs import CONTENT_TYPE
 
 
 async def default_file_handler(file_name, content, save_to='~/media/'):
@@ -38,7 +39,7 @@ async def multipart_parser(request, file_handler=default_file_handler):
                         # in case we just want to parse data and not save file actually e.g. in validator
                         file_data = await part.read(decode=True)
                         file_data = part.decode(file_data)
-                        file_path = await file_handler(part.filename, file_data)
+                        file_path = await file_handler(part.filename, file_data, part.headers[CONTENT_TYPE])
                     else:
                         file_path = part.filename
                     multipart_data['files'][part.name] = file_path
