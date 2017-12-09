@@ -179,6 +179,13 @@ class CRUDModel(BaseSignal):
     async def paginate(self, limit=15, offset: int = 0, order_by: str = 'created desc', **filter) -> dict:
         coros = [self.filter(limit=limit, offset=offset, order_by=order_by, **filter), self.count(**filter)]
         records, count = await gather(*coros, return_exceptions=True)
+        if isinstance(records, Exception):
+            raise records
+        if isinstance(count, Exception):
+            raise count
+
+        if count == 0:
+            return {'records': [], 'total_pages': 0, 'total_records': 0, 'limit': limit}
 
         if offset is None:
             offset = 0
