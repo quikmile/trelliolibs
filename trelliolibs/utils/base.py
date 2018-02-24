@@ -169,7 +169,14 @@ class CRUDModel(BaseSignal):
         return self._record.record_to_dict(record, normalize=self._serializers)
 
     async def delete(self, **where):
-        await self._db.delete(table=self._table, where_dict=where)
+        is_active = await self._db.where(table=self._table,columns='is_active', **where)
+        if is_active:
+            flag = {'is_active':False}
+            _ = await self._db.update(table=self._table, where_dict=where, **flag)
+
+    async def search(self, limit, columns='*', **where):
+        record = await self._db.where(table=self._table, columns=columns, limit=limit ,**where)
+        return self._record.record_to_dict(record, normalize=self._serializers)
 
     async def update(self, where_dict: dict, values: dict) -> dict:
         values['updated'] = int(time())
