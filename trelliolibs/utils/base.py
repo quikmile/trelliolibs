@@ -165,7 +165,6 @@ class CRUDModel(BaseSignal):
         return self._record.record_to_dict(record, normalize=self._serializers)
 
     async def filter(self, limit=None, offset=None, order_by='created desc', **filter) -> list:
-        filter.update({'is_active': True})
         record = await self._db.where(table=self._table, offset=offset, limit=limit, order_by=order_by, **filter)
         return self._record.record_to_dict(record, normalize=self._serializers)
 
