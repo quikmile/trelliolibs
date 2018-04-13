@@ -172,7 +172,7 @@ class CRUDModel(BaseSignal):
         if is_active == False:
             return await self._db.update(table=self._table, where_dict=where, is_active=False)
         else:
-            return await self._db.delete(table=self._table, **where)
+            return await self._db.delete(table=self._table, where_dict=where)
 
     async def search(self, limit, columns='*', **where):
         record = await self._db.where(table=self._table, columns=columns, limit=limit, **where)
