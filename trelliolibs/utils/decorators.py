@@ -1,4 +1,5 @@
 from functools import wraps
+from json import JSONDecodeError
 from uuid import UUID
 
 from cerberus import Validator
@@ -25,7 +26,11 @@ def validate_schema(schema=None, allow_unknown=False):
                 v = TrellioValidator(schema, allow_unknown=allow_unknown)
                 if isinstance(self, HTTPService) or isinstance(self, HTTPView):
                     request = args[0]
-                    payload = await request.json()
+                    try:
+                        payload = await request.json()
+                    except JSONDecodeError:
+                        data = await request.text()
+                        return json_response({'error': 'invalid json', 'data': data}, status=400)
                     if not v.validate(payload):
                         return json_response({'error': v.errors}, status=400)
                 elif isinstance(self, TCPService) or isinstance(self, TCPView):
