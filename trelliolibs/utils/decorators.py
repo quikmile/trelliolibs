@@ -49,7 +49,11 @@ def required_params(*params):
         async def wrapper(self, *args, **kwargs):
             if isinstance(self, HTTPService) or isinstance(self, HTTPView):
                 request = args[0]
-                payload = await request.json()
+                try:
+                    payload = await request.json()
+                except JSONDecodeError:
+                    data = await request.text()
+                    return json_response({'error': 'invalid json', 'data': data}, status=400)
                 missing_params = list(filter(lambda x: x not in payload.keys(), params))
                 if missing_params:
                     return json_response({'error': 'required params - {} not found'.format(', '.join(missing_params))})
